@@ -32,11 +32,16 @@ tokenToBuilder _ = return ()
 attrsToObject :: [(Str, Str)] -> Object
 attrsToObject = HM.fromList . map (second String)
 
+mergeObject :: Value -> Value -> Value
+mergeObject (Array arr) v  = Array (V.cons v arr)
+mergeObject v1          v2 = Array (V.fromList [v1, v2])
+
 elementToJSON :: Element -> Value
 elementToJSON (Element as vs cs) =
-    Object $ HM.fromList $ ("_attributes", Object (attrsToObject as))
-                         : ("_values", Array (V.fromList (map String vs)))
-                         : map (second elementToJSON) cs
+    Object $ HM.fromListWith mergeObject
+               $ ("__attributes", Object (attrsToObject as))
+               : ("__values", Array (V.fromList (map String vs)))
+               : map (second elementToJSON) cs
 
 tokensToJSON :: [Token] -> Value
 tokensToJSON tokens =
