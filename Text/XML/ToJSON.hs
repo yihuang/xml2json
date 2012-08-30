@@ -9,7 +9,6 @@ import Control.Monad (when)
 import Control.Arrow (second)
 
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Conduit
 import qualified Data.Conduit.List as C
 import qualified Data.Conduit.Binary as C
@@ -17,17 +16,18 @@ import Data.Conduit.Blaze (builderToByteString)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
-import Text.HTML.TagStream (tokenStream, showToken, Token, Token'(..))
+import Text.HTML.TagStream
+import Text.HTML.TagStream.Text
 import Text.XML.ToJSON.Builder
 import Data.Aeson (Value(..), Object)
 
 tokenToBuilder :: Token -> Builder
 tokenToBuilder (TagOpen s as selfClose) = do
-    beginElement (decodeUtf8 s)
-    addAttrs (map (\(s1,s2) -> (decodeUtf8 s1, decodeUtf8 s2)) as)
+    beginElement s
+    addAttrs as
     when selfClose endElement
 tokenToBuilder (TagClose _) = endElement -- FIXME should match tag name?
-tokenToBuilder (Text s) = addValue (decodeUtf8 s)
+tokenToBuilder (Text s) = addValue s
 tokenToBuilder _ = return ()
 
 attrsToObject :: [(Str, Str)] -> Object
