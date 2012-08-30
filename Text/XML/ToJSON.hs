@@ -8,6 +8,7 @@ import System.IO (stdout)
 import Control.Monad (when)
 import Control.Arrow (second)
 
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Conduit
 import qualified Data.Conduit.List as C
@@ -38,10 +39,21 @@ mergeObject v1          v2 = Array (V.fromList [v1, v2])
 
 elementToJSON :: Element -> Value
 elementToJSON (Element as vs cs) =
-    Object $ HM.fromListWith mergeObject
-               $ ("__attributes", Object (attrsToObject as))
-               : ("__values", Array (V.fromList (map String vs)))
-               : map (second elementToJSON) cs
+    if null as && null cs
+      then
+        String (T.concat vs)
+      else
+        Object $ HM.fromListWith mergeObject
+                   $ attrs
+                  ++ values
+                  ++ map (second elementToJSON) cs
+  where
+    attrs = if null as
+              then []
+              else [("__attributes", Object (attrsToObject as))]
+    values = if null vs
+               then []
+               else [("__values", Array (V.fromList (map String vs)))]
 
 tokensToJSON :: [Token] -> Value
 tokensToJSON tokens =
