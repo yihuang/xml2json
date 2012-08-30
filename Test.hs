@@ -31,27 +31,18 @@ getCodec c =
         "gbk"   -> Just C.iso8859_1
         _       -> Nothing
 
-traceM a = trace (show a) (return ())
-
-
-
-xmlToJSON :: (Monad m, MonadThrow m) => Source m ByteString -> m Value
+xmlToJSON :: (Functor m, Monad m, MonadThrow m) => Source m ByteString -> m Value
 xmlToJSON src = do
-    (src', mtoken) <- src $$+ C.sinkParser (char '<' *> S.tag)
+    (src', token) <- src $$+ C.sinkParser (char '<' *> S.tag)
 
     let (mencoding, src'') =
-          case mtoken of
-            Nothing -> error "no token"
-            Just (TagOpen "?xml" as _) -> (lookup "encoding" as, src')
-            Just token -> (Nothing, appendResumableSource (yield (B.toByteString (S.showToken id token))) src')
+          case token of
+            (TagOpen "?xml" as _) -> (lookup "encoding" as, src')
+            token -> (Nothing, appendResumableSource (yield (B.toByteString (S.showToken id token))) src')
 
         codec = fromMaybe C.utf8 (CI.mk <$> mencoding >>= getCodec)
 
-    traceM mencoding
-
-    tokens <- src'' $$+- (C.decode codec =$ T.tokenStream =$ C.consume)
-
-    return (tokensToJSON tokens)
+    tokensToJSON <$> (src'' $$+- (C.decode codec =$ T.tokenStream =$ C.consume))
   where
     appendResumableSource src (ResumableSource src' close) = ResumableSource (src >> src') close
 
