@@ -22,10 +22,10 @@ import Data.Aeson (Value(..), Object)
 
 tokenToBuilder :: Token -> Builder
 tokenToBuilder (TagOpen s as selfClose) = do
-    pushElement (decodeUtf8 s)
+    beginElement (decodeUtf8 s)
     addAttrs (map (\(s1,s2) -> (decodeUtf8 s1, decodeUtf8 s2)) as)
-    when selfClose popElement
-tokenToBuilder (TagClose _) = popElement -- FIXME should match tag name?
+    when selfClose endElement
+tokenToBuilder (TagClose _) = endElement -- FIXME should match tag name?
 tokenToBuilder (Text s) = addValue (decodeUtf8 s)
 tokenToBuilder _ = return ()
 

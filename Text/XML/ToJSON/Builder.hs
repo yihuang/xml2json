@@ -41,12 +41,12 @@ finishStack []          = error "finishStack: empty stack."
 finishStack [(_, elm)]  = elm
 finishStack st          = finishStack (popStack st)
 
-pushElement :: Str -> Builder
-pushElement name =
+beginElement :: Str -> Builder
+beginElement name =
     modify ( (name, emptyElement) : )
 
-popElement :: Builder
-popElement =
+endElement :: Builder
+endElement =
     modify popStack
 
 modifyTopElement :: (Element -> Element) -> Builder
