@@ -1,7 +1,10 @@
 Translate xml to json, and thanks to tagstream-conduit, it can parse malformed xml.
 
-Example
-=======
+Examples
+========
+
+Simple example
+--------------
 
 XML ::
 
@@ -11,14 +14,43 @@ XML ::
       ccc
   </test>
 
-would be translated to JSON ::
+JSON ::
 
-  { "_values":["\n"]
-  , "_attributes":{}
-  , "test":{ "_values":["\n    ccc\n","aaa\n    "]
-           , "_attributes":{"k2":"v2","k1":"v1"}
-           , "p":{ "_values":["bbb"]
-                 , "_attributes":{}
-                 }
+  {"test":{"p":"bbb"
+          ,"__attributes":{"k2":"v2","k1":"v1"}
+          ,"__values":["\n    ccc\n","aaa\n    "]
+          }
+  ,"__values":["\n"]
+  }
+
+Siblings with same name got merged.
+-----------------------------------
+
+XML ::
+
+  <books>
+      <book>
+          <name>foo</name>
+          <author>Jim</author>
+      </book>
+      <book>
+          <name>bar</name>
+          <author>Jake</author>
+      </book>
+  </books>
+
+JSON ::
+
+  {"__values":["\n"]
+  ,"books":{"book":[{"author":"Jim"
+                    ,"name":"foo"
+                    ,"__values":["\n    ","\n        "]
+                    }
+                   ,{"author":"Jake"
+                    ,"name":"bar"
+                    ,"__values":["\n    ","\n        "]
+                    }
+                   ]
+           ,"__values":["\n","\n    "]
            }
   }
