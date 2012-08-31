@@ -13,10 +13,12 @@ name:                xml2json
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:            
+synopsis:            translate xml to json
 
 -- A longer description of the package.
 -- description:         
+
+homepage:            http://github.com/yihuang/xml2json
 
 -- The license under which the package is released.
 license:             BSD3
@@ -41,6 +43,9 @@ build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.8
 
+source-repository head
+  type:     git
+  location: git://github.com/yihuang/xml2json
 
 library
   ghc-options:       -Wall -O2
