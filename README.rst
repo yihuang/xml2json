@@ -1,4 +1,4 @@
-Translate xml to json, and thanks to tagstream-conduit, it can parse malformed xml.
+Translate xml to json, and due to using of `tagstream-conduit <https://github.com/yihuang/tagstream-conduit>`_, it can parse malformed xml.
 
 Examples
 ========
