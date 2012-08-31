@@ -96,8 +96,8 @@ prependRSrc src (ResumableSource src' close) = ResumableSource (src >> src') clo
 getCodec :: CI.CI ByteString -> Maybe C.Codec
 getCodec c =
     case c of
-        "utf-8" -> Just C.utf8
-        "utf8"  -> Just C.utf8
-        "gbk"   -> Just C.iso8859_1
-        _       -> Nothing
+        "utf-8"   -> Just C.utf8
+        "utf8"    -> Just C.utf8
+        "iso8859" -> Just C.iso8859_1
+        _         -> Nothing
 
