@@ -43,12 +43,45 @@ cabal-version:       >=1.8
 
 
 library
+  ghc-options:       -Wall -O2
   -- Modules exported by the library.
-  exposed-modules:     Text.XML.ToJSON, Text.XML.ToJSON.Builder
+  exposed-modules:     Text.XML.ToJSON
+                     , Text.XML.ToJSON.Builder
   
   -- Modules included in this library but not exported.
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.0, conduit >=0.5, bytestring >=0.9, aeson >=0.6, tagstream-conduit >=0.5, text >=0.11, blaze-builder-conduit >=0.5, unordered-containers >=0.2, vector >=0.9, transformers >=0.2
-  
+  build-depends:       base                 ==4.*
+                     , transformers         >=0.2
+                     , bytestring           >=0.9
+                     , text                 >=0.11
+                     , blaze-builder        ==0.3.*
+                     , case-insensitive     ==0.4.*
+                     , unordered-containers >=0.2
+                     , vector               >=0.9
+                     , vector               >=0.9
+                     , attoparsec           ==0.10.*
+                     , aeson                ==0.6.*
+                     , conduit              ==0.5.*
+                     , blaze-builder-conduit ==0.5.*
+                     , attoparsec-conduit   ==0.5.*
+                     , tagstream-conduit    ==0.5.*
+
+executable xml2json
+  main-is: Main.hs
+  ghc-options:       -Wall -O2
+  build-depends:       base                 ==4.*
+                     , transformers         >=0.2
+                     , bytestring           >=0.9
+                     , text                 >=0.11
+                     , blaze-builder        ==0.3.*
+                     , case-insensitive     ==0.4.*
+                     , unordered-containers >=0.2
+                     , vector               >=0.9
+                     , attoparsec           ==0.10.*
+                     , aeson                ==0.6.*
+                     , conduit              ==0.5.*
+                     , blaze-builder-conduit ==0.5.*
+                     , attoparsec-conduit   ==0.5.*
+                     , tagstream-conduit    ==0.5.*
