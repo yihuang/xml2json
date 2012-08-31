@@ -7,24 +7,25 @@ import Control.Monad.Trans.State
 type Str = Text
 
 data Element = Element
-  { attrs       :: [(Str, Str)]
-  , values      :: [Str]
-  , children    :: [(Str, Element)]
+  { elAttrs       :: [(Str, Str)]
+  , elValues      :: [Str]
+  , elChildren    :: [(Str, Element)]
   } deriving (Show)
 
+emptyElement :: Element
 emptyElement = Element [] [] []
 
 addChild' :: (Str, Element) -> Element -> Element
-addChild' item o = o { children = item : children o }
+addChild' item o = o { elChildren = item : elChildren o }
 
 addValue' :: Str -> Element -> Element
-addValue' v o = o { values = v : values o }
+addValue' v o = o { elValues = v : elValues o }
 
 addAttr' :: (Str, Str) -> Element -> Element
-addAttr' attr o = o { attrs = attr : attrs o }
+addAttr' attr o = o { elAttrs = attr : elAttrs o }
 
 addAttrs' :: [(Str, Str)] -> Element -> Element
-addAttrs' as o = o { attrs = as ++ attrs o }
+addAttrs' as o = o { elAttrs = as ++ elAttrs o }
 
 type Stack = [(Str, Element)]
 type Builder = State Stack ()
