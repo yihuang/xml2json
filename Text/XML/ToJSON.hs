@@ -68,9 +68,12 @@ tokensToJSON tokens =
     elementToJSON $ runBuilder (mapM_ tokenToBuilder tokens)
 
 xmlToJSON :: (Functor m, Monad m, MonadThrow m) => Source m ByteString -> m Value
-xmlToJSON src = do
+xmlToJSON src = xmlToJSONResumable (ResumableSource src (return ()))
+
+xmlToJSONResumable :: (Functor m, Monad m, MonadThrow m) => ResumableSource m ByteString -> m Value
+xmlToJSONResumable src = do
     -- try to peek the first tag to find the xml encoding.
-    (src', token) <- src $$+ C.sinkParser (char '<' *> S.tag)
+    (src', token) <- src $$++ C.sinkParser (char '<' *> S.tag)
 
     let (mencoding, src'') =
           case token of
