@@ -7,14 +7,15 @@ module Text.XML.ToJSON
 
 import Control.Monad (when)
 import Control.Arrow (second)
-import Control.Applicative ( (<$>), (*>) )
+import Control.Applicative ( (<$>), (*>), (<|>) )
 
 import Data.Maybe (fromMaybe)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
 import Data.ByteString (ByteString)
 import qualified Blaze.ByteString.Builder as B
-import Data.Attoparsec.ByteString.Char8 (char)
+import qualified Data.Attoparsec as A
+import Data.Attoparsec.ByteString.Char8 (char, skipSpace)
 import Data.Conduit
 import Data.Conduit.Internal (ResumableSource(ResumableSource))
 import qualified Data.Conduit.List as C
@@ -70,10 +71,16 @@ tokensToJSON tokens =
 xmlToJSON :: (Functor m, Monad m, MonadThrow m) => Source m ByteString -> m Value
 xmlToJSON src = xmlToJSONResumable (ResumableSource src (return ()))
 
+skipBOM :: A.Parser ()
+skipBOM =
+    ( A.string "\xff\xfe"
+    <|> A.string "\xef\xbb\xbf"
+    ) *> return ()
+
 xmlToJSONResumable :: (Functor m, Monad m, MonadThrow m) => ResumableSource m ByteString -> m Value
 xmlToJSONResumable src = do
     -- try to peek the first tag to find the xml encoding.
-    (src', token) <- src $$++ C.sinkParser (char '<' *> S.tag)
+    (src', token) <- src $$++ C.sinkParser (skipBOM *> skipSpace *> char '<' *> S.tag)
 
     let (mencoding, src'') =
           case token of
