@@ -122,8 +122,9 @@ bsRSourceToJSON src = do
     skipBOM :: A.Parser ()
     skipBOM =
         ( A.string "\xff\xfe"
-        <|> A.string "\xef\xbb\xbf"
+          <|> A.string "\xef\xbb\xbf"
         ) *> return ()
+        <|> return ()
 
     prependRSrc :: Monad m
                 => Source m a
