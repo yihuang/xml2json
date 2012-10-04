@@ -82,8 +82,8 @@ elementToJSON (Element as vs cs) =
     attrsToObject = HM.fromList . map (second String)
 
     mergeObject :: Value -> Value -> Value
-    mergeObject (Array arr) v  = Array (V.cons v arr)
-    mergeObject v1          v2 = Array (V.fromList [v1, v2])
+    mergeObject v (Array arr) = Array (V.cons v arr)
+    mergeObject v1         v2 = Array (V.fromList [v1, v2])
 
 -- |Convert list of tagstream-conduit `Token` to aeson `Value'
 tokensToJSON :: [T.Token] -> Value
