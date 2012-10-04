@@ -1,12 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+import Control.Applicative
 import Control.Monad (liftM)
-import Control.Monad.Trans.Resource (runExceptionT)
+import Control.Monad.Trans.Resource (ExceptionT(runExceptionT))
 import Control.Exception (throw)
-import Data.Functor.Identity (runIdentity)
+import Data.Functor.Identity (Identity(runIdentity))
 import qualified Data.ByteString.Lazy as L
+import Data.Text (Text)
 import qualified Data.Text.Encoding as T
-import Data.Aeson (encode)
-import Text.XML.ToJSON (xmlToJSON)
+import Data.Aeson.Types (typeMismatch)
+import Data.Aeson (encode, FromJSON(parseJSON), (.:), Value(Object, Array))
+import qualified Data.Vector as V
+import Text.XML.ToJSON (xmlToJSON, parseXML)
 import Test.Hspec
 
 toLazy s = L.fromChunks [s]
@@ -60,13 +64,49 @@ cases =
     )
   ]
 
+runExcT :: ExceptionT Identity a -> a
+runExcT m = either throw id $ runIdentity $ runExceptionT m
+
 one (desc, xml, json) =
     it desc $
-        let m = liftM encode (xmlToJSON xml)
-        in  either throw
-                   (==json)
-                   (runIdentity (runExceptionT m))
+        runExcT (liftM encode (xmlToJSON xml)) == json
+
+data User = User
+  { name :: Text
+  , addr :: Text
+  } deriving (Eq)
+
+data UserList = UserList
+  { userList :: [User]
+  , userCount :: Int
+  } deriving (Eq)
+
+instance FromJSON User where
+    parseJSON (Object o) =
+        User <$> o .: "name"
+             <*> o .: "addr"
+    parseJSON o = typeMismatch "User" o
+
+instance FromJSON UserList where
+    parseJSON (Object o) = do
+        root <- o .: "users"
+        UserList <$> root .: "user"
+                 <*> (fmap read (root .: "count"))
+      where
+        parseUserList (Array a) =
+            mapM parseJSON (V.toList a)
+        parseUserList o = typeMismatch "UserList.userList" o
+    parseJSON o = typeMismatch "UserList" o
 
 main :: IO ()
 main = hspec $ do
     describe "basic cases" $ mapM_ one cases
+    describe "parse" $ do
+        it "user list" $
+            let a = runExcT $ parseXML
+                      "<users>\
+                        \<count>100</count>\
+                        \<user><name>foo</name><addr>foo addr</addr></user>\
+                        \<user><name>bar</name><addr>bar addr</addr></user>\
+                      \</users>"
+            in  a == UserList [User "foo" "foo addr", User "bar" "bar addr"] 100
