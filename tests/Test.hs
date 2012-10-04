@@ -1,43 +1,46 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Applicative
-import Control.Monad (liftM)
 import Control.Monad.Trans.Resource (ExceptionT(runExceptionT))
 import Control.Exception (throw)
+import Data.Maybe (fromMaybe)
 import Data.Functor.Identity (Identity(runIdentity))
+import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy as L
+import Data.ByteString.Lazy.Char8 ()
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Aeson.Types (typeMismatch)
-import Data.Aeson (encode, FromJSON(parseJSON), (.:), Value(Object, Array))
+import Data.Aeson (decode, FromJSON(parseJSON), (.:), Value(Object, Array))
 import qualified Data.Vector as V
 import Text.XML.ToJSON (xmlToJSON, parseXML)
 import Test.Hspec
 
+toLazy :: S.ByteString -> L.ByteString
 toLazy s = L.fromChunks [s]
 
-cases :: [(String, L.ByteString, L.ByteString)]
+cases :: [(String, L.ByteString, Value)]
 cases =
   [ ( "basic"
-    , toLazy $ T.encodeUtf8 $
+    , toLazy $ T.encodeUtf8
       "<user>\
          \<name>foo</name>\
          \<addr>bar road</addr>\
       \</user>"
-    , toLazy $ T.encodeUtf8 $
+    , fromMaybe "impossible" $ decode
       "{\"user\":{\"name\":\"foo\",\"addr\":\"bar road\"}}"
     )
   , ( "unicode"
-    , toLazy $ T.encodeUtf8 $
+    , toLazy $ T.encodeUtf8
       "<?xml encoding=\"utf-8\"?>\n\
       \<user>\
          \<name>测试</name>\
          \<addr>bar road</addr>\
       \</user>"
-    , toLazy $ T.encodeUtf8 $
+    , fromMaybe "impossible" $ decode $ toLazy $ T.encodeUtf8
       "{\"user\":{\"name\":\"测试\",\"addr\":\"bar road\"}}"
     )
   , ( "array"
-    , toLazy $ T.encodeUtf8 $
+    , toLazy $ T.encodeUtf8
       "<users>\
         \<user>\
          \<name>foo</name>\
@@ -52,7 +55,7 @@ cases =
          \<addr>test road</addr>\
         \</user>\
       \</users>"
-    , toLazy $ T.encodeUtf8 $
+    , fromMaybe "impossible" $ decode
       "{\"users\":\
          \{\"user\":\
             \[{\"name\":\"foo\",\"addr\":\"foo road\"}\
@@ -67,9 +70,11 @@ cases =
 runExcT :: ExceptionT Identity a -> a
 runExcT m = either throw id $ runIdentity $ runExceptionT m
 
+one :: (String, L.ByteString, Value) -> Spec
 one (desc, xml, json) =
     it desc $
-        runExcT (liftM encode (xmlToJSON xml)) == json
+        let v = runExcT (xmlToJSON xml)
+        in  v == json
 
 data User = User
   { name :: Text
@@ -91,17 +96,17 @@ instance FromJSON UserList where
     parseJSON (Object o) = do
         root <- o .: "users"
         UserList <$> root .: "user"
-                 <*> (fmap read (root .: "count"))
+                 <*> fmap read (root .: "count")
       where
         parseUserList (Array a) =
             mapM parseJSON (V.toList a)
-        parseUserList o = typeMismatch "UserList.userList" o
+        parseUserList a = typeMismatch "UserList.userList" a
     parseJSON o = typeMismatch "UserList" o
 
 main :: IO ()
 main = hspec $ do
     describe "basic cases" $ mapM_ one cases
-    describe "parse" $ do
+    describe "parse" $
         it "user list" $
             let a = runExcT $ parseXML
                       "<users>\
