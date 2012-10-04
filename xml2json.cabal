@@ -65,7 +65,6 @@ library
                      , case-insensitive     ==0.4.*
                      , unordered-containers >=0.2
                      , vector               >=0.9
-                     , vector               >=0.9
                      , attoparsec           ==0.10.*
                      , aeson                ==0.6.*
                      , conduit              ==0.5.*
@@ -96,6 +95,7 @@ test-suite test
     main-is: Test.hs
     type: exitcode-stdio-1.0
     build-depends:     base >= 4 && < 5
+                     , vector >=0.9
                      , transformers >= 0.3
                      , resourcet >= 0.3
                      , hspec >= 1.3
