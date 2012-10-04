@@ -1,6 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Debug.Trace
-
 import Control.Monad (liftM)
 import Control.Monad.Trans.Resource (runExceptionT)
 import Control.Exception (throw)
