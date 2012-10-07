@@ -16,9 +16,9 @@ version:             0.2.0.0
 synopsis:            translate xml to json
 
 -- A longer description of the package.
--- description:         
+description:         refer git page (https://github.com/yihuang/xml2json)
 
-homepage:            http://github.com/yihuang/xml2json
+homepage:            https://github.com/yihuang/xml2json
 
 -- The license under which the package is released.
 license:             BSD3
