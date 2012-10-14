@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 import System.Environment (getArgs)
-import System.IO (stdin, stdout, openFile, IOMode(..))
+import System.IO (stdin, stdout, openFile, IOMode(..), hOutput)
 import System.Exit (exitSuccess)
 import Control.Applicative
 import Data.Conduit
@@ -22,3 +22,4 @@ main = do
         _ -> putStrLn "xml2json [input] [output]" >> exitSuccess
     tokens <- runResourceT $ C.sourceHandle hInput $= tokenStreamBS $$ C.consume
     L.hPutStrLn hOutput $ encode $ tokensToJSON tokens
+    hFlush hOutput

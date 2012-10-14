@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 import System.Environment (getArgs)
-import System.IO (stdin, stdout, openFile, IOMode(..))
+import System.IO (stdin, stdout, openFile, IOMode(..), hFlush)
 import System.Exit (exitSuccess)
 import Control.Applicative
 import Data.Conduit
@@ -23,3 +23,4 @@ main = do
 
     tokens <- runResourceT $ C.sourceHandle hInput $= tokenStreamBS $$ C.consume
     L.hPutStrLn hOutput $ encode $ tokensToJSON tokens
+    hFlush hOutput
