@@ -16,12 +16,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as HM
-import Text.XML.ToJSON.Builder (Element(..))
-import qualified Text.XML.ToJSON as ToJSON
+import qualified Data.Vector as V
 import Data.Aeson (Value(..), FromJSON, fromJSON, Result(Error, Success))
 import Data.Attoparsec.Text (parseOnly, number)
 import Data.Conduit (($=), ($$), MonadThrow(monadThrow))
 import qualified Data.Conduit.List as C
+import Text.XML.ToJSON.Builder (Element(..))
+import qualified Text.XML.ToJSON as ToJSON
 import qualified Text.HTML.TagStream.Text as T
 import Text.XML.ToJSON hiding (parseXML, xmlToJSON, tokensToJSON, elementToJSON)
 
@@ -59,6 +60,7 @@ plistValue (t, elm) = case t of
     "true"      -> Bool True
     "false"     -> Bool False
     "date"      -> error "date support is not implemented"
+    "array"     -> Array $ V.fromList $ map plistValue (elChildren elm)
     _           -> Object $ HM.fromList [("type", String t), ("value", ToJSON.elementToJSON elm)]
   where
     parseNumber :: Text -> Value

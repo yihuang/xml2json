@@ -88,6 +88,16 @@ plistCases =
               \<key>sex</key>\
               \<string>male</string>\
             \</dict>\
+            \<key>array</key>\
+            \<array>\
+              \<string>blahblah</string>\
+              \<integer>200</integer>\
+              \<real>100.5</real>\
+              \<dict>\
+                \<key>sex</key>\
+                \<string>male</string>\
+              \</dict>\
+            \</array>\
           \</dict>\
         \</plist>"
       , fromMaybe "impossible" $ decode
@@ -99,6 +109,13 @@ plistCases =
         \,\"extra\":\
           \{\"sex\":\"male\"\
           \}\
+        \,\"array\":\
+          \[\"blahblah\"\
+          \,200\
+          \,100.5\
+          \,{\"sex\":\"male\"\
+           \}\
+          \]\
         \}"
       )
     ]
