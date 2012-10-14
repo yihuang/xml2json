@@ -19,7 +19,7 @@ import qualified Data.HashMap.Strict as HM
 import Text.XML.ToJSON.Builder (Element(..))
 import qualified Text.XML.ToJSON as ToJSON
 import Data.Aeson (Value(..), FromJSON, fromJSON, Result(Error, Success))
-import Data.Attoparsec.Text (parseOnly, number, Number)
+import Data.Attoparsec.Text (parseOnly, number)
 import Data.Conduit (($=), ($$), MonadThrow(monadThrow))
 import qualified Data.Conduit.List as C
 import qualified Text.HTML.TagStream.Text as T
@@ -52,17 +52,19 @@ plistValue :: (Text, Element) -> Value
 plistValue (t, elm) = case t of
     "string"    -> String (getText elm)
     "data"      -> String (getText elm)
-    "integer"   -> Number $ parseNumber (getText elm)
-    "float"     -> Number $ parseNumber (getText elm)
-    "real"      -> Number $ parseNumber (getText elm)
+    "integer"   -> parseNumber (getText elm)
+    "float"     -> parseNumber (getText elm)
+    "real"      -> parseNumber (getText elm)
     "dict"      -> plistObject elm
     "true"      -> Bool True
     "false"     -> Bool False
     "date"      -> error "date support is not implemented"
-    _           -> Object $ HM.fromList $ [("type", String t), ("value", ToJSON.elementToJSON elm)]
+    _           -> Object $ HM.fromList [("type", String t), ("value", ToJSON.elementToJSON elm)]
   where
-    parseNumber :: Text -> Number
-    parseNumber s = either (error . ("parse number failed:"++)) id $ parseOnly number s
+    parseNumber :: Text -> Value
+    parseNumber "" = Null
+    parseNumber s = either (error . ("parse number failed:"++)) Number $
+                        parseOnly number s
 
     plistObject :: Element -> Value
     plistObject (Element _ _ cs) =
