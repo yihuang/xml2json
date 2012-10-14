@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 import System.Environment (getArgs)
-import System.IO (stdin, stdout, openFile, IOMode(..), hOutput)
+import System.IO (stdin, stdout, openFile, IOMode(..), hFlush)
 import System.Exit (exitSuccess)
 import Control.Applicative
 import Data.Conduit
