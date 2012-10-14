@@ -36,14 +36,14 @@ data Element = Element
 emptyElement :: Element
 emptyElement = Element [] [] []
 
-reverseChildren :: Element -> Element
-reverseChildren (Element as vs cs) = Element as vs (reverse cs)
+reverseBack :: Element -> Element
+reverseBack (Element as vs cs) = Element as (reverse vs) (reverse cs)
 
--- | add a child element to an element, leave children in reverse order, reverse it in `popStack'.
+-- | add a child element to an element in reverse order, reversed back in `popStack'.
 addChild' :: (Text, Element) -> Element -> Element
 addChild' item o = o { elChildren = item : elChildren o }
 
--- | add a text value to an element
+-- | add a text value to an element in reverse order, reversed back in `popStack'.
 addValue' :: Text -> Element -> Element
 addValue' v o = o { elValues = v : elValues o }
 
@@ -60,13 +60,13 @@ type Stack = [(Text, Element)]
 
 -- | close current tag.
 popStack :: Stack -> Stack
-popStack ((k,v) : (name,elm) : tl) = (name, addChild' (k,reverseChildren v) elm) : tl
+popStack ((k,v) : (name,elm) : tl) = (name, addChild' (k,reverseBack v) elm) : tl
 popStack _ = error "popStack: can't pop root elmect."
 
 -- | close all unclosed tags and return the root element.
 closeStack :: Stack -> Element
 closeStack []          = error "closeStack: empty stack."
-closeStack [(_, elm)]  = reverseChildren elm
+closeStack [(_, elm)]  = reverseBack elm
 closeStack st          = closeStack (popStack st)
 
 -- | `Builder' is a `State' monad to transform a `Stack'.
