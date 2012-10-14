@@ -2,48 +2,34 @@
 
 module Text.XML.ToJSON
   (
-
 {-| This library provide a way to convert xml to json.
     
     Further more, by combining with aeson's parsing facility, it provide a way to parse xml to haskell data type.
  -}
-    parseXML
-  , xmlToJSON
-  , JSONParseError
-    -- * streamlined api
-  , bsSourceToJSON
-  , bsRSourceToJSON
+    xmlToJSON
+  , parseXML
+  , JSONParseError(JSONParseError)
     -- * utils
-  , tokenToBuilder
-  , elementToJSON
   , tokensToJSON
+  , elementToJSON
+  , tokensToElement
+  , tokenToBuilder
   ) where
 
 import Control.Monad (when, liftM)
 import Control.Arrow (second)
 import Control.Exception (Exception)
-import Control.Applicative ( (*>), (<|>) )
 
 import Data.Typeable (Typeable)
-import Data.Maybe (fromMaybe)
-import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as L
-import Data.ByteString (ByteString)
-import qualified Blaze.ByteString.Builder as B
-import qualified Data.Attoparsec as A
-import Data.Attoparsec.ByteString.Char8 (char, skipSpace)
-import Data.Conduit (Source, yield, (=$), ($$++), ($$+-), MonadThrow(monadThrow))
-import Data.Conduit.Internal (ResumableSource(ResumableSource))
+import Data.Conduit (($=), ($$), MonadThrow(monadThrow))
 import qualified Data.Conduit.List as C
-import qualified Data.Conduit.Attoparsec as C
-import qualified Data.Conduit.Text as C
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
 import Text.HTML.TagStream
 import qualified Text.HTML.TagStream.Text as T
-import qualified Text.HTML.TagStream.ByteString as S
 import Text.XML.ToJSON.Builder
 import Data.Aeson (Value(..), Object, FromJSON, fromJSON, Result(Error, Success))
 
@@ -82,63 +68,16 @@ elementToJSON (Element as vs cs) =
     attrsToObject = HM.fromList . map (second String)
 
     mergeObject :: Value -> Value -> Value
-    mergeObject v (Array arr) = Array (V.cons v arr)
-    mergeObject v1         v2 = Array (V.fromList [v1, v2])
+    mergeObject v (Array arr) = Array (V.snoc arr v)
+    mergeObject v1         v2 = Array (V.fromList [v2, v1])
 
--- |Convert list of tagstream-conduit `Token` to aeson `Value'
+-- | Consume a list of `T.Token' to build an `Element'
+tokensToElement :: [T.Token] -> Element
+tokensToElement ts = runBuilder (mapM_ tokenToBuilder ts)
+
+-- |Convert list of tagstream-conduit `T.Token` to aeson `Value', combining of `tokensToElement' and `elementToJSON'
 tokensToJSON :: [T.Token] -> Value
-tokensToJSON tokens =
-    elementToJSON $ runBuilder (mapM_ tokenToBuilder tokens)
-
--- | Consume a source and convert the content to aeson `Value', it try to inspect xml encoding from first tag.
---
--- e.g. @bsSourceToJSON (C.sourceFile path_to_xml_file)@
-bsSourceToJSON :: MonadThrow m => Source m ByteString -> m Value
-bsSourceToJSON src = bsRSourceToJSON (ResumableSource src (return ()))
-
--- | Consume a source and convert the content to aeson `Value', it try to inspect xml encoding from first tag.
---
--- e.g. @xmlStreamToJSONResumable (requestBody req)@
-bsRSourceToJSON :: MonadThrow m => ResumableSource m ByteString -> m Value
-bsRSourceToJSON src = do
-    -- try to peek the first tag to find the xml encoding.
-    (src', token) <- src $$++ C.sinkParser (skipBOM *> skipSpace *> char '<' *> S.tag)
-
-    let (mencoding, src'') =
-          case token of
-            (TagOpen "?xml" as _) ->
-                (lookup "encoding" as, src')
-            _ ->
-                ( Nothing
-                , prependRSrc
-                    (yield (B.toByteString (S.showToken id token)))
-                    src'
-                )
-
-        codec = fromMaybe C.utf8 (mencoding >>= getCodec . CI.mk)
-
-    liftM tokensToJSON (src'' $$+- (C.decode codec =$ T.tokenStream =$ C.consume))
-  where
-    skipBOM :: A.Parser ()
-    skipBOM =
-        ( A.string "\xff\xfe"
-          <|> A.string "\xef\xbb\xbf"
-        ) *> return ()
-        <|> return ()
-
-    prependRSrc :: Monad m
-                => Source m a
-                -> ResumableSource m a
-                -> ResumableSource m a
-    prependRSrc src (ResumableSource src' close) = ResumableSource (src >> src') close
-
-    getCodec :: CI.CI ByteString -> Maybe C.Codec
-    getCodec c =
-        case c of
-            "utf-8"   -> Just C.utf8
-            "utf8"    -> Just C.utf8
-            "iso8859" -> Just C.iso8859_1
-            _         -> Nothing
+tokensToJSON = elementToJSON . tokensToElement
 
 newtype JSONParseError = JSONParseError String
   deriving (Typeable, Show)
@@ -153,6 +92,6 @@ parseXML s = xmlToJSON s >>= convert
             Error err -> monadThrow (JSONParseError err)
             Success a -> return a
 
--- | convert lazy xml `ByteString' to aeson `Value'.
+-- | Parse lazy xml `ByteString' to aeson `Value'.
 xmlToJSON :: MonadThrow m => L.ByteString -> m Value
-xmlToJSON s = bsSourceToJSON (C.sourceList (L.toChunks s))
+xmlToJSON s = liftM tokensToJSON $ C.sourceList (L.toChunks s) $= T.tokenStreamBS $$ C.consume

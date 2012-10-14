@@ -28,7 +28,7 @@ import Control.Monad.Trans.State
 
 -- | represent a XML element.
 data Element = Element
-  { elAttrs       :: [(Text, Text)]      -- ^ tag attributes.
+  { elAttrs       :: [(Text, Text)]     -- ^ tag attributes.
   , elValues      :: [Text]             -- ^ text values.
   , elChildren    :: [(Text, Element)]  -- ^ child elements.
   } deriving (Show)
@@ -36,7 +36,10 @@ data Element = Element
 emptyElement :: Element
 emptyElement = Element [] [] []
 
--- | add a child element to an element
+reverseChildren :: Element -> Element
+reverseChildren (Element as vs cs) = Element as vs (reverse cs)
+
+-- | add a child element to an element, leave children in reverse order, reverse it in `popStack'.
 addChild' :: (Text, Element) -> Element -> Element
 addChild' item o = o { elChildren = item : elChildren o }
 
@@ -57,13 +60,13 @@ type Stack = [(Text, Element)]
 
 -- | close current tag.
 popStack :: Stack -> Stack
-popStack ((k,v) : (name,elm) : tl) = (name, addChild' (k,v) elm) : tl
+popStack ((k,v) : (name,elm) : tl) = (name, addChild' (k,reverseChildren v) elm) : tl
 popStack _ = error "popStack: can't pop root elmect."
 
 -- | close all unclosed tags and return the root element.
 closeStack :: Stack -> Element
 closeStack []          = error "closeStack: empty stack."
-closeStack [(_, elm)]  = elm
+closeStack [(_, elm)]  = reverseChildren elm
 closeStack st          = closeStack (popStack st)
 
 -- | `Builder' is a `State' monad to transform a `Stack'.

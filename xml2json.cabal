@@ -10,7 +10,7 @@ name:                xml2json
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.2.0.0
+version:             0.2.0.1
 
 -- A short (one-line) description of the package.
 synopsis:            translate xml to json
@@ -51,6 +51,7 @@ library
   ghc-options:       -Wall -O2
   -- Modules exported by the library.
   exposed-modules:     Text.XML.ToJSON
+                     , Text.XML.PList
                      , Text.XML.ToJSON.Builder
   
   -- Modules included in this library but not exported.
@@ -70,10 +71,10 @@ library
                      , conduit              ==0.5.*
                      , blaze-builder-conduit ==0.5.*
                      , attoparsec-conduit   ==0.5.*
-                     , tagstream-conduit    ==0.5.*
+                     , tagstream-conduit    >=0.5.4
 
 executable xml2json
-  main-is: Main.hs
+  main-is: xml2json.hs
   ghc-options:       -Wall -O2
   build-depends:       base                 ==4.*
                      , transformers         >=0.2
@@ -88,7 +89,25 @@ executable xml2json
                      , conduit              ==0.5.*
                      , blaze-builder-conduit ==0.5.*
                      , attoparsec-conduit   ==0.5.*
-                     , tagstream-conduit    ==0.5.*
+                     , tagstream-conduit    >=0.5.4
+
+executable plist2json
+  main-is: plist2json.hs
+  ghc-options:       -Wall -O2
+  build-depends:       base                 ==4.*
+                     , transformers         >=0.2
+                     , bytestring           >=0.9
+                     , text                 >=0.11
+                     , blaze-builder        ==0.3.*
+                     , case-insensitive     ==0.4.*
+                     , unordered-containers >=0.2
+                     , vector               >=0.9
+                     , attoparsec           ==0.10.*
+                     , aeson                ==0.6.*
+                     , conduit              ==0.5.*
+                     , blaze-builder-conduit ==0.5.*
+                     , attoparsec-conduit   ==0.5.*
+                     , tagstream-conduit    >=0.5.4
 
 test-suite test
     hs-source-dirs: tests

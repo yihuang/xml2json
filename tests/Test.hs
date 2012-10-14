@@ -13,6 +13,7 @@ import Data.Aeson.Types (typeMismatch)
 import Data.Aeson (decode, FromJSON(parseJSON), (.:), Value(Object, Array))
 import qualified Data.Vector as V
 import Text.XML.ToJSON (xmlToJSON, parseXML)
+import qualified Text.XML.PList as PList
 import Test.Hspec
 
 toLazy :: S.ByteString -> L.ByteString
@@ -67,13 +68,54 @@ cases =
     )
   ]
 
+plistCases :: [(String, L.ByteString, Value)]
+plistCases =
+    [ ( "basic"
+      , toLazy $ T.encodeUtf8
+        "<plist>\
+          \<dict>\
+            \<key>name</key>\
+            \<string>foo</string>\
+            \<key>addr</key>\
+            \<string>bar road</string>\
+            \<key>age</key>\
+            \<integer>25</integer>\
+            \<key>nil key</key>\
+            \<key>income</key>\
+            \<float>234.223</float>\
+            \<key>extra</key>\
+            \<dict>\
+              \<key>sex</key>\
+              \<string>male</string>\
+            \</dict>\
+          \</dict>\
+        \</plist>"
+      , fromMaybe "impossible" $ decode
+        "{\"name\":\"foo\"\
+        \,\"addr\":\"bar road\"\
+        \,\"age\":25\
+        \,\"nil key\":null\
+        \,\"income\":234.223\
+        \,\"extra\":\
+          \{\"sex\":\"male\"\
+          \}\
+        \}"
+      )
+    ]
+
 runExcT :: ExceptionT Identity a -> a
 runExcT m = either throw id $ runIdentity $ runExceptionT m
 
-one :: (String, L.ByteString, Value) -> Spec
-one (desc, xml, json) =
+testOne :: (String, L.ByteString, Value) -> Spec
+testOne (desc, xml, json) =
     it desc $
         let v = runExcT (xmlToJSON xml)
+        in  v == json
+
+testPList :: (String, L.ByteString, Value) -> Spec
+testPList (desc, xml, json) =
+    it desc $
+        let v = runExcT (PList.xmlToJSON xml)
         in  v == json
 
 data User = User
@@ -95,7 +137,7 @@ instance FromJSON User where
 instance FromJSON UserList where
     parseJSON (Object o) = do
         root <- o .: "users"
-        UserList <$> root .: "user"
+        UserList <$> (root .: "user" >>= parseUserList)
                  <*> fmap read (root .: "count")
       where
         parseUserList (Array a) =
@@ -105,7 +147,7 @@ instance FromJSON UserList where
 
 main :: IO ()
 main = hspec $ do
-    describe "basic cases" $ mapM_ one cases
+    describe "basic cases" $ mapM_ testOne cases
     describe "parse" $
         it "user list" $
             let a = runExcT $ parseXML
@@ -115,3 +157,4 @@ main = hspec $ do
                         \<user><name>bar</name><addr>bar addr</addr></user>\
                       \</users>"
             in  a == UserList [User "foo" "foo addr", User "bar" "bar addr"] 100
+    describe "plist" $ mapM_ testPList plistCases
