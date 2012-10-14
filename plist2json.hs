@@ -1,5 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 import System.Environment (getArgs)
+import System.IO (stdin, stdout, openFile, IOMode(..))
+import System.Exit (exitSuccess)
+import Control.Applicative
 import Data.Conduit
 import qualified Data.Conduit.Binary as C
 import qualified Data.Conduit.List as C
@@ -10,6 +13,13 @@ import Text.HTML.TagStream.Text (tokenStreamBS)
 
 main :: IO ()
 main = do
-    [name] <- getArgs
-    tokens <- runResourceT $ C.sourceFile name $= tokenStreamBS $$ C.consume
-    L.putStrLn $ encode $ tokensToJSON tokens
+    args <- getArgs
+    (hInput, hOutput) <- case args of
+        []              -> return (stdin, stdout)
+        [input]         -> (,stdout) <$> openFile input ReadMode
+        [input, output] -> (,) <$> openFile input ReadMode
+                               <*> openFile output WriteMode
+        _ -> putStrLn "plist2json [input] [output]" >> exitSuccess
+
+    tokens <- runResourceT $ C.sourceHandle hInput $= tokenStreamBS $$ C.consume
+    L.hPutStrLn hOutput $ encode $ tokensToJSON tokens
